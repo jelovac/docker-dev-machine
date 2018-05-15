@@ -1,0 +1,56 @@
+version: '2'
+
+networks: 
+  dev:
+
+services:
+
+  web-server:
+    build:
+      context: ./web-server
+      dockerfile: Dockerfile
+    container_name: dev-web-server
+    networks: 
+      - dev
+
+  mongo:
+    build:
+      context: ./mongo
+      dockerfile: Dockerfile
+    container_name: dev-mongo
+    networks: 
+      - dev
+
+  mysql:
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+    container_name: dev-mysql
+    networks: 
+      - dev
+
+  sphinx:
+    build:
+      context: ./sphinx
+      dockerfile: Dockerfile
+    container_name: dev-sphinx
+    networks: 
+      - dev
+
+  memcached:
+    build:
+      context: ./memcached
+      dockerfile: Dockerfile
+    container_name: dev-sphinx
+    networks: 
+      - dev
+
+  dev-full:
+    image: tianon/true
+    container_name: dev-full
+    depends_on: 
+      - web-server
+      - memcached
+      - mysql
+      - mongo
+      - sphinx
