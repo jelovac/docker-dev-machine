@@ -9,23 +9,54 @@ services:
     build:
       context: ./web-server
       dockerfile: Dockerfile
-    container_name: dev-web-server
+    image: dev-web-server
     networks: 
       - dev
 
   mongo:
-    build:
-      context: ./mongo
-      dockerfile: Dockerfile
-    container_name: dev-mongo
+    image: mongo:3.4
     networks: 
       - dev
 
-  mysql:
-    build:
-      context: ./mysql
-      dockerfile: Dockerfile
-    container_name: dev-mysql
+  mysql-master:
+    image: mysql:5.6
+    volumes:
+      - ./mysql/config/common.cnf:/etc/mysql/conf.d/common.cnf:ro
+      - ./mysql/config/replication-master.cnf:/etc/mysql/conf.d/replication-master.cnf:ro
+      - ./mysql/scripts/init/replication-master.sh:/docker-entrypoint-initdb.d/replication-master.sh:ro
+      - ./data/mysql/master:/var/lib/mysql
+    hostname: mysql-master
+    environment: 
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    networks: 
+      - dev
+
+  mysql-slave:
+    image: mysql:5.6
+    volumes:
+      - ./mysql/config/common.cnf:/etc/mysql/conf.d/common.cnf:ro
+      - ./mysql/config/replication-slave.cnf:/etc/mysql/conf.d/replication-slave.cnf:ro
+      - ./mysql/scripts/init/replication-slave.sh:/docker-entrypoint-initdb.d/replication-slave.sh:ro
+      - ./data/mysql/slave:/var/lib/mysql
+    environment: 
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - REPLICATION_MASTER_HOST=mysql-master
+    depends_on: 
+      - mysql-master
+    networks:
+      - dev
+
+  pma:
+    image: phpmyadmin/phpmyadmin:latest
+    environment: 
+      - PMA_USER=root
+      - PMA_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - PMA_HOSTS=mysql-master,mysql-slave
+    ports: 
+      - ${PMA_LOCAL_PORT}:80
+    depends_on:
+      - mysql-master
+      - mysql-slave
     networks: 
       - dev
 
@@ -33,15 +64,13 @@ services:
     build:
       context: ./sphinx
       dockerfile: Dockerfile
-    container_name: dev-sphinx
+    image: dev-sphinx
+    tty: true
     networks: 
       - dev
 
   memcached:
-    build:
-      context: ./memcached
-      dockerfile: Dockerfile
-    container_name: dev-sphinx
+    image: memcached:1.5
     networks: 
       - dev
 
@@ -51,6 +80,8 @@ services:
     depends_on: 
       - web-server
       - memcached
-      - mysql
+      - mysql-master
+      - mysql-slave
       - mongo
       - sphinx
+      - pma
