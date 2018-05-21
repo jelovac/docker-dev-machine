@@ -1,0 +1,7 @@
+##
+# Settings for MySQL replication on Slave
+##
+[mysqld]
+server-id=2
+relay_log=/var/log/mysql/mysql-relay-bin.log
+report-host=mysql_master

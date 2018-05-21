@@ -1,0 +1,7 @@
+##
+# Settings for MySQL replication on Master
+##
+[mysqld]
+server-id=1
+log_bin=/var/log/mysql/mysql-bin
+binlog_format=ROW
